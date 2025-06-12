@@ -1,4 +1,4 @@
 structure.txt
 __pycache__
-app/__pycache__
-utils/__pycache__
+app/__pycache__/*
+utils/__pycache__/*

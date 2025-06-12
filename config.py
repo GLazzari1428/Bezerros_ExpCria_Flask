@@ -4,7 +4,7 @@ import os
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'uma-chave-secreta-muito-dificil'
     # Formato da string de conexão para MariaDB: mysql+pymysql://user:password@host/dbname
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://seu_usuario:sua_senha@localhost/bezerros_db'
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://db_user:abc123@localhost/bezerros_db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Configurações do Broker MQTT

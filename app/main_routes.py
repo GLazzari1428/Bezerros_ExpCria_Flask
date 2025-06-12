@@ -7,6 +7,8 @@ from datetime import datetime
 from .models import ActuatorStatus
 from flask import request, jsonify
 from .mqtt_utils import publish_command
+from datetime import datetime, timedelta
+from sqlalchemy import func
 
 
 bp = Blueprint('main', __name__)
@@ -118,3 +120,80 @@ def atuador_command():
         return jsonify({'status': 'success', 'message': f'Comando {command} enviado para {actuator}.'})
     else:
         return jsonify({'status': 'error', 'message': 'Falha ao publicar no broker MQTT.'}), 500
+
+@bp.route('/sensores')
+@login_required
+def sensores():
+    # Apenas renderiza a página. Os dados virão da API que criaremos abaixo.
+    return render_template('sensores.html', title='Sensores')
+
+@bp.route('/api/sensor_data/<periodo>')
+@login_required
+def sensor_data(periodo):
+    end_time = datetime.now()
+    query_result = []
+    
+    # A lógica para o período de 1h não usa a função de data, então não precisa de alteração
+    if periodo == '1h':
+        start_time = end_time - timedelta(hours=1)
+        query_result = SensorData.query.filter(SensorData.timestamp.between(start_time, end_time)).order_by(SensorData.timestamp.asc()).all()
+        labels = [d.timestamp.strftime('%H:%M') for d in query_result]
+        temperatures = [d.temperature for d in query_result]
+        humidities = [d.humidity for d in query_result]
+
+    else:
+        # Lógica de agregação para períodos mais longos
+        date_format_mysql = "" # Usaremos formatos do MySQL/MariaDB
+        label_format_python = "" # Usaremos formatos do Python para exibir
+
+        if periodo == '12h':
+            start_time = end_time - timedelta(hours=12)
+            date_format_mysql = '%Y-%m-%d %H:%i' # Agrupa por minuto
+            label_format_python = '%H:%M'
+        elif periodo == '24h':
+            start_time = end_time - timedelta(days=1)
+            date_format_mysql = '%Y-%m-%d %H:00' # Agrupa por hora
+            label_format_python = '%d/%m %Hh'
+        elif periodo == '7d':
+            start_time = end_time - timedelta(days=7)
+            date_format_mysql = '%Y-%m-%d' # Agrupa por dia
+            label_format_python = '%d/%m'
+        elif periodo == '30d':
+            start_time = end_time - timedelta(days=30)
+            date_format_mysql = '%Y-%m-%d' # Agrupa por dia
+            label_format_python = '%d/%m'
+        else:
+            return jsonify({'error': 'Período inválido'}), 400
+
+        # Query de agregação CORRIGIDA usando func.date_format
+        query_result = db.session.query(
+            func.date_format(SensorData.timestamp, date_format_mysql).label('period'),
+            func.avg(SensorData.temperature).label('avg_temp'),
+            func.avg(SensorData.humidity).label('avg_hum')
+        ).filter(
+            SensorData.timestamp.between(start_time, end_time)
+        ).group_by(
+            'period'
+        ).order_by(
+            'period'
+        ).all()
+        
+        # O label agora é formatado no Python a partir do resultado do banco
+        labels = [d.period for d in query_result]
+        if 'h' in label_format_python or ':' in label_format_python: # Se o formato incluir hora/minuto
+            labels = [datetime.strptime(d.period, '%Y-%m-%d %H:%M' if ':' in date_format_mysql else '%Y-%m-%d %H:00').strftime(label_format_python) for d in query_result]
+        else: # Se o formato for apenas dia
+            labels = [datetime.strptime(d.period, '%Y-%m-%d').strftime(label_format_python) for d in query_result]
+
+        temperatures = [round(d.avg_temp, 2) for d in query_result]
+        humidities = [round(d.avg_hum, 2) for d in query_result]
+
+    last_reading = SensorData.query.order_by(SensorData.timestamp.desc()).first()
+
+    return jsonify({
+        'labels': labels,
+        'temperatures': temperatures,
+        'humidities': humidities,
+        'current_temp': f"{last_reading.temperature:.1f}" if last_reading else 'N/A',
+        'current_hum': f"{last_reading.humidity:.1f}" if last_reading else 'N/A'
+    })

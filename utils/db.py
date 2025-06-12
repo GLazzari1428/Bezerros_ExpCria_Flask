@@ -1,46 +1,48 @@
 # utils/db.py
+
 import sys
 import os
 
-# Adiciona o diretório raiz ao path para encontrar o módulo 'app'
+# Adiciona o diretório raiz do projeto ao path do Python
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app import create_app
-from app.models import db, User, ActuatorStatus, SystemSettings
+from app import create_app, db
+from app.models import User, ActuatorStatus
 
+# Cria uma instância da aplicação para obter o contexto da aplicação
 app = create_app()
 
+# O 'with app.app_context()' garante que a aplicação esteja configurada
+# corretamente antes de interagir com o banco de dados.
 with app.app_context():
     print("Criando todas as tabelas no banco de dados...")
+    # Cria todas as tabelas definidas nos seus modelos
     db.create_all()
     print("Tabelas criadas com sucesso.")
 
-    # Opcional: Criar um usuário admin inicial
-    if not User.query.filter_by(username='admin').first():
-        print("Criando usuário 'admin' inicial...")
-        admin = User(
+    print("Criando usuário 'admin' inicial...")
+    # Verifica se o usuário admin já existe
+    if User.query.filter_by(username='admin').first() is None:
+        admin_user = User(
             username='admin',
             full_name='Administrador do Sistema',
-            email='admin@sistema.com',
+            email='admin@example.com',
             role='admin'
         )
-        admin.set_password('admin123') # Troque essa senha!
-        db.session.add(admin)
+        admin_user.set_password('admin')  # Defina uma senha segura aqui
+        db.session.add(admin_user)
         db.session.commit()
         print("Usuário 'admin' criado.")
+    else:
+        print("Usuário 'admin' já existe.")
 
-    # Opcional: Criar registros iniciais para atuadores e configurações
-    actuators = ['aquecedor', 'ventilador', 'nevoa', 'persiana']
+    # Adiciona os atuadores iniciais se eles não existirem
+    print("Criando registros de atuadores iniciais...")
+    actuators = ['aquecedor', 'ventilador', 'cortina', 'aspersor']
     for act_name in actuators:
-        if not ActuatorStatus.query.filter_by(name=act_name).first():
-            actuator = ActuatorStatus(name=act_name)
+        if not ActuatorStatus.query.filter_by(actuator_name=act_name).first():
+            actuator = ActuatorStatus(actuator_name=act_name, status='desligado')
             db.session.add(actuator)
     
-    settings = {'temp_muito_frio': 10.0, 'temp_frio': 15.0, 'temp_quente': 25.0, 'temp_muito_quente': 30.0}
-    for key, value in settings.items():
-        if not SystemSettings.query.filter_by(setting_name=key).first():
-            setting = SystemSettings(setting_name=key, value=value)
-            db.session.add(setting)
-
     db.session.commit()
-    print("Registros iniciais de atuadores e configurações criados.")
+    print("Registros de atuadores criados.")

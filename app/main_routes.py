@@ -5,12 +5,12 @@ from .models import SensorData, db # Vamos precisar de SensorData e db para o lo
 from .mqtt_utils import get_current_status # Importa nossa nova função
 from datetime import datetime
 from .models import ActuatorStatus, User, SystemSettings
-from .forms import RegistrationForm, EditUserForm
+from .forms import RegistrationForm, EditUserForm, SettingsForm
 from flask import request, jsonify
 from .mqtt_utils import publish_command
 from datetime import datetime, timedelta
 from sqlalchemy import func
-
+from . import mqtt_utils
 
 bp = Blueprint('main', __name__)
 
@@ -76,7 +76,7 @@ def atuadores():
 
     # 2. Busca o histórico (última ativação) do nosso banco de dados
     actuators_from_db = ActuatorStatus.query.all()
-    history_status = {act.name: act.last_changed.strftime('%d/%m/%Y às %H:%M:%S') for act in actuators_from_db}
+    history_status = {act.actuator_name: act.last_changed.strftime('%d/%m/%Y às %H:%M:%S') for act in actuators_from_db}
 
     # 3. Mapeia os nomes para a exibição na interface
     actuator_display_names = {
@@ -272,3 +272,22 @@ def delete_user(id):
     user_to_delete.delete()
     flash('Usuário removido com sucesso.', 'success')
     return redirect(url_for('main.list_users'))
+
+@bp.route('/gerenciamento', methods=['GET', 'POST'])
+@login_required
+def gerenciamento():
+    settings = SystemSettings.get_settings()
+    form = SettingsForm(obj=settings)
+
+    if form.validate_on_submit():
+        form.populate_obj(settings)
+        db.session.commit()
+        
+        if mqtt_utils.publish_settings(settings):
+            flash('Configurações salvas e publicadas com sucesso!', 'success')
+        else:
+            flash('Configurações salvas no banco, mas falha ao publicar no MQTT.', 'warning')
+            
+        return redirect(url_for('main.gerenciamento'))
+
+    return render_template('gerenciamento.html', title="Gerenciamento", form=form)

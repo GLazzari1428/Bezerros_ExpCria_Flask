@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Gerenciamento do Sistema</h1>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+        <p class="lead">
+            Ajuste os parâmetros de automação do sistema. Estes valores serão enviados ao ESP32 para controlar 
+            quando os atuadores (aquecedor, ventilador, etc.) devem ser acionados.
+        </p>
+        <hr>
+        <form method="POST" action="" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                {{ form.temp_frio.label(class="form-label fw-bold") }}
+                {{ form.temp_frio(class="form-control") }}
+                <div class="form-text">{{ form.temp_frio.description }}</div>
+                {% for error in form.temp_frio.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+            </div>
+
+            <div class="mb-3">
+                {{ form.temp_quente.label(class="form-label fw-bold") }}
+                {{ form.temp_quente(class="form-control") }}
+                <div class="form-text">{{ form.temp_quente.description }}</div>
+                {% for error in form.temp_quente.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+            </div>
+
+            <hr>
+
+            <div class="mb-3">
+                {{ form.umidade_baixa.label(class="form-label fw-bold") }}
+                {{ form.umidade_baixa(class="form-control") }}
+                <div class="form-text">{{ form.umidade_baixa.description }}</div>
+                {% for error in form.umidade_baixa.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+            </div>
+
+            <div class="mb-4">
+                {{ form.umidade_alta.label(class="form-label fw-bold") }}
+                {{ form.umidade_alta(class="form-control") }}
+                <div class="form-text">{{ form.umidade_alta.description }}</div>
+                {% for error in form.umidade_alta.errors %}<span class="text-danger small">{{ error }}</span>{% endfor %}
+            </div>
+
+            <div class="d-grid">
+                {{ form.submit(class="btn btn-primary btn-lg") }}
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

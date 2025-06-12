@@ -73,3 +73,29 @@ def get_current_status():
 
     print(f"--- [DEBUG] Finalizado. Dados coletados: {status_data}")
     return status_data
+
+
+def publish_command(topic, payload):
+    """Conecta, publica um único comando e desconecta."""
+    try:
+        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
+    except AttributeError:
+        client = mqtt.Client()
+    
+    client.username_pw_set(current_app.config['MQTT_USERNAME'], current_app.config['MQTT_PASSWORD'])
+    client.connect(current_app.config['MQTT_BROKER_URL'], current_app.config['MQTT_BROKER_PORT'], 60)
+    
+    # É importante iniciar o loop para garantir que a conexão seja estabelecida
+    # antes de publicar
+    client.loop_start()
+    time.sleep(0.2) # Pequena pausa para garantir a conexão
+    
+    # Publica o comando
+    result = client.publish(topic, payload)
+    
+    # Para o loop e desconecta
+    client.loop_stop()
+    client.disconnect()
+    
+    # Retorna True se a publicação foi enfileirada com sucesso
+    return result.rc == mqtt.MQTT_ERR_SUCCESS

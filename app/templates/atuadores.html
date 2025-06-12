@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Controle de Atuadores</h1>
+</div>
+
+<div class="row">
+    {% for key, name in actuator_names.items() %}
+    {% set status = live_status.get(key, 'N/A') %}
+    {% set is_on = status == '1' %}
+    {% set last_changed = history_status.get(key, 'Nunca') %}
+
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ name }}</h5>
+                <p class="card-text">
+                    Status Atual: 
+                    {% if is_on %}
+                        <span class="badge bg-success">
+                            {% if key == 'pers' %}Aberto{% else %}Ligado{% endif %}
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger">
+                            {% if key == 'pers' %}Fechado{% else %}Desligado{% endif %}
+                        </span>
+                    {% endif %}
+                </p>
+                <div 
+                    class="d-grid gap-2" 
+                    data-bs-toggle="tooltip" 
+                    data-bs-placement="top" 
+                    title="Última alteração: {{ last_changed }}">
+
+                    {% if current_user.role == 'admin' %}
+                        <button class="btn btn-primary" onclick="sendCommand('{{ key }}', '1')" {% if is_on %}disabled{% endif %}>
+                            {% if key == 'pers' %}Abrir{% else %}Ligar{% endif %}
+                        </button>
+                        <button class="btn btn-secondary" onclick="sendCommand('{{ key }}', '0')" {% if not is_on %}disabled{% endif %}>
+                            {% if key == 'pers' %}Fechar{% else %}Desligar{% endif %}
+                        </button>
+                    {% else %}
+                        <p class="text-muted text-center small">Você não tem permissão para alterar o estado.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Habilita os Tooltips do Bootstrap para a dica de "última alteração"
+const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+// Função para enviar o comando para o backend
+function sendCommand(actuator, command) {
+    console.log(`Enviando comando: Atuador=${actuator}, Comando=${command}`);
+    
+    fetch('/atuador/command', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ actuator: actuator, command: command }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Resposta do servidor:', data);
+        if (data.status === 'success') {
+            // Recarrega a página para refletir o novo estado
+            // Uma abordagem mais avançada seria atualizar a interface sem recarregar
+            window.location.reload();
+        } else {
+            alert('Falha ao enviar comando: ' + data.message);
+        }
+    })
+    .catch((error) => {
+        console.error('Erro:', error);
+        alert('Erro ao se comunicar com o servidor.');
+    });
+}
+</script>
+{% endblock %}

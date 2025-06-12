@@ -1,10 +1,11 @@
 # app/main_routes.py
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort
 from flask_login import login_required, current_user
 from .models import SensorData, db # Vamos precisar de SensorData e db para o log
 from .mqtt_utils import get_current_status # Importa nossa nova função
 from datetime import datetime
-from .models import ActuatorStatus
+from .models import ActuatorStatus, User, SystemSettings
+from .forms import RegistrationForm, EditUserForm
 from flask import request, jsonify
 from .mqtt_utils import publish_command
 from datetime import datetime, timedelta
@@ -197,3 +198,77 @@ def sensor_data(periodo):
         'current_temp': f"{last_reading.temperature:.1f}" if last_reading else 'N/A',
         'current_hum': f"{last_reading.humidity:.1f}" if last_reading else 'N/A'
     })
+@bp.route('/users')
+@login_required
+def list_users():
+    """Lista todos os usuários do sistema."""
+    users = User.get_all()
+    return render_template('users_list.html', users=users, title="Gerenciar Usuários")
+
+@bp.route('/user/add', methods=['GET', 'POST'])
+@login_required
+def add_user():
+    """Adiciona um novo usuário (função do admin)."""
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User(
+            username=form.username.data,
+            full_name=form.full_name.data,
+            email=form.email.data,
+            role=form.role.data
+        )
+        user.set_password(form.password.data)
+        user.save()
+        flash('Novo usuário criado com sucesso!', 'success')
+        return redirect(url_for('main.list_users'))
+    return render_template('user_add.html', form=form, title="Adicionar Usuário")
+
+@bp.route('/user/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_user(id):
+    """Edita um usuário existente."""
+    user = User.get_by_id(id)
+    if not user:
+        abort(404)
+        
+    form = EditUserForm(original_username=user.username, original_email=user.email)
+    
+    if request.method == 'GET':
+        form.username.data = user.username
+        form.full_name.data = user.full_name
+        form.email.data = user.email
+        form.role.data = user.role
+
+    if form.validate_on_submit():
+        user.username = form.username.data
+        user.full_name = form.full_name.data
+        user.email = form.email.data
+        user.role = form.role.data
+        if form.password.data:
+            user.set_password(form.password.data)
+        db.session.commit()
+        flash('Usuário atualizado com sucesso!', 'success')
+        return redirect(url_for('main.list_users'))
+
+    return render_template('user_edit.html', form=form, user=user, title="Editar Usuário")
+
+@bp.route('/user/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_user(id):
+    """Deleta um usuário."""
+    user_to_delete = User.get_by_id(id)
+    if not user_to_delete:
+        flash('Usuário não encontrado.', 'error')
+        return redirect(url_for('main.list_users'))
+
+    if user_to_delete.role == 'admin':
+        flash('Não é possível remover um administrador.', 'danger')
+        return redirect(url_for('main.list_users'))
+    
+    if user_to_delete.id == current_user.id:
+        flash('Você não pode remover a si mesmo.', 'danger')
+        return redirect(url_for('main.list_users'))
+
+    user_to_delete.delete()
+    flash('Usuário removido com sucesso.', 'success')
+    return redirect(url_for('main.list_users'))

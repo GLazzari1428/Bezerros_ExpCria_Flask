@@ -125,8 +125,17 @@ def atuador_command():
 @bp.route('/sensores')
 @login_required
 def sensores():
-    # Apenas renderiza a página. Os dados virão da API que criaremos abaixo.
-    return render_template('sensores.html', title='Sensores')
+    """
+    CORREÇÃO: Agora, esta rota busca os dados atuais e os passa para o template,
+    garantindo que os valores na página estejam sempre sincronizados no carregamento.
+    """
+    status = get_current_status()
+    temp_atual = status.get('temperature', 'N/A')
+    umid_atual = status.get('umidade', 'N/A')
+    return render_template('sensores.html', 
+                           title='Sensores',
+                           temp_atual=temp_atual,
+                           umid_atual=umid_atual)
 
 @bp.route('/api/sensor_data/<periodo>')
 @login_required
@@ -291,3 +300,11 @@ def gerenciamento():
         return redirect(url_for('main.gerenciamento'))
 
     return render_template('gerenciamento.html', title="Gerenciamento", form=form)
+
+# --- NOVA ROTA SIMPLIFICADA PARA POLLING ---
+@bp.route('/api/live_status')
+@login_required
+def live_status_api():
+    """Retorna o status mais recente de todos os sensores e atuadores."""
+    status = get_current_status()
+    return jsonify(status)

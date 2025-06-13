@@ -73,9 +73,11 @@ function sendCommand(actuator, command) {
     .then(data => {
         console.log('Resposta do servidor:', data);
         if (data.status === 'success') {
-            // Recarrega a página para refletir o novo estado
-            // Uma abordagem mais avançada seria atualizar a interface sem recarregar
-            window.location.reload();
+            // CORREÇÃO: Adiciona um pequeno delay antes de recarregar a página.
+            // Isso dá tempo para o ESP32 e o broker MQTT atualizarem o status.
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000); // Espera 750ms
         } else {
             alert('Falha ao enviar comando: ' + data.message);
         }
@@ -85,5 +87,32 @@ function sendCommand(actuator, command) {
         alert('Erro ao se comunicar com o servidor.');
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Guarda o status inicial dos atuadores que foi renderizado na página.
+    const initialStatus = {{ live_status | tojson }};
+
+    const checkForUpdates = async () => {
+        try {
+            const response = await fetch('/api/live_status');
+            const liveData = await response.json();
+
+            // Compara o status dos atuadores. Se algum mudou, recarrega.
+            if ( liveData.heater !== initialStatus.heater ||
+                 liveData.fan    !== initialStatus.fan    ||
+                 liveData.mist   !== initialStatus.mist   ||
+                 liveData.pers   !== initialStatus.pers )
+           {
+                console.log('Nova atualização de status de atuador detectada. Recarregando...');
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error('Erro ao verificar atualizações:', error);
+        }
+    };
+    
+    // Verifica a cada 7 segundos
+    setInterval(checkForUpdates, 7000);
+});
 </script>
 {% endblock %}

@@ -1,4 +1,7 @@
+__pycache__/
+app/__pycache__/
+utils/__pycache__/
+.vscode/
+.idea/
 structure.txt
-__pycache__
-app/__pycache__/*
-utils/__pycache__/*
+venv/

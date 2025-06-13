@@ -49,13 +49,11 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    // Função para buscar dados e atualizar os gráficos
     async function updateCharts(periodo) {
         try {
             const response = await fetch(`/api/sensor_data/${periodo}`);
             const data = await response.json();
 
-            // Atualiza os valores nos cards (embora já venham do servidor, isso atualiza ao trocar período)
             document.getElementById('current-temp').innerText = `${data.current_temp} °C`;
             document.getElementById('current-hum').innerText = `${data.current_hum} %`;
             
@@ -86,10 +84,8 @@
     }
     
     document.addEventListener('DOMContentLoaded', () => {
-        // Carrega os gráficos com dados da última hora
         updateCharts('1h');
 
-        // --- LÓGICA DE POLLING PARA REFRESH (AGORA SIMPLIFICADA) ---
         const initialTemp = '{{ temp_atual }}';
         const initialHum = '{{ umid_atual }}';
 

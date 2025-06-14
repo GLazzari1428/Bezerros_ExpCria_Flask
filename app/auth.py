@@ -1,8 +1,7 @@
-# app/auth.py
 from flask import Blueprint, render_template, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required
 from .models import User, db
-from .forms import LoginForm, RegistrationForm # Criaremos este arquivo a seguir
+from .forms import LoginForm, RegistrationForm 
 
 bp = Blueprint('auth', __name__)
 
@@ -15,7 +14,7 @@ def login():
             flash('Usuário ou senha inválidos.')
             return redirect(url_for('auth.login'))
         login_user(user, remember=form.remember_me.data)
-        return redirect(url_for('main.home')) # main.home será a rota da página principal
+        return redirect(url_for('main.home'))
     return render_template('auth/login.html', title='Login', form=form)
 
 @bp.route('/register', methods=['GET', 'POST'])

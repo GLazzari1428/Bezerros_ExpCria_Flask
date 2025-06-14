@@ -7,13 +7,10 @@ from flask_login import LoginManager
 
 db = SQLAlchemy()
 login_manager = LoginManager()
-# Redireciona para a página de login se o usuário tentar acessar uma página protegida
 login_manager.login_view = 'auth.login' 
 login_manager.login_message = None
 
 def create_app(config_class=Config):
-    """
-    """
     app = Flask(__name__)
     app.config.from_object(config_class)
 

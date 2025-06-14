@@ -4,25 +4,21 @@ import os
 import random
 import math
 from datetime import datetime, timedelta, date
+from app import create_app
+from app.models import db, SensorData, User, Bezerro
 
-# Adiciona o diretório raiz ao path para encontrar o módulo 'app'
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app import create_app
-from app.models import db, SensorData, User, Bezerro # Importar User e Bezerro
 
 app = create_app()
 
 with app.app_context():
 
-    # --- SEÇÃO DE CRIAÇÃO DE USUÁRIOS ---
     print("Verificando e criando usuários administradores fictícios...")
     
-    # Lista dos novos admins que queremos criar
     admin_usernames = ['ana_silva', 'bruno_costa', 'carla_dias', 'diego_souza', 'elisa_pereira']
     new_admins = []
 
-    # Primeiro, vamos garantir que o admin principal exista e obter seu objeto
     main_admin = User.query.filter_by(username='admin').first()
     if not main_admin:
         print("Usuário 'admin' principal não encontrado. Por favor, execute 'utils/db.py' primeiro.")
@@ -36,24 +32,21 @@ with app.app_context():
                 email=f'{username}@example.com',
                 role='admin'
             )
-            admin_user.set_password('12345') # Senha padrão para todos
+            admin_user.set_password('12345')
             db.session.add(admin_user)
             new_admins.append(admin_user)
             print(f"Usuário '{username}' criado.")
         else:
-            # Se o usuário já existe, apenas o pega do banco para usar depois
             new_admins.append(User.query.filter_by(username=username).first())
             print(f"Usuário '{username}' já existe.")
     
     db.session.commit()
     print("Criação de usuários finalizada.")
 
-    # --- SEÇÃO DE CRIAÇÃO DE BEZERROS ---
     print("\nPopulando o banco de dados com bezerros fictícios...")
 
 
     bezerros_para_criar = []
-    # Garante que cada novo admin cadastre 4 bezerros
     bezerro_num = 1
     for admin in new_admins:
         for i in range(4):
@@ -66,7 +59,6 @@ with app.app_context():
             bezerros_para_criar.append(bezerro)
             bezerro_num += 1
     
-    # Cria os 10 bezerros restantes e os atribui ao admin principal
     for i in range(10):
         bezerro = Bezerro(
             nome=f'Pintado {bezerro_num}',
@@ -87,7 +79,7 @@ with app.app_context():
         print("O banco de dados de sensores já parece estar populado. Saindo da seção de sensores.")
     else:
         end_time = datetime.now()
-        total_points = 30 * 24 * 2 # 30 dias, um a cada 30 minutos
+        total_points = 30 * 24 * 2 
         
         new_data_points = []
         for i in range(total_points):

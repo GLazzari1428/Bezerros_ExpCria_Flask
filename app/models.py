@@ -14,8 +14,8 @@ class User(UserMixin, db.Model):
     full_name = db.Column(db.String(120))
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(256))
-    role = db.Column(db.String(20), default='publico_geral') # 'admin' ou 'publico_geral'
-
+    role = db.Column(db.String(20), default='publico_geral')
+    
     bezerros_criados = db.relationship('Bezerro', back_populates='criado_por', lazy='dynamic', cascade="all, delete-orphan") # relacionamento com os bezerros
 
     def set_password(self, password):
@@ -46,10 +46,9 @@ class Bezerro(db.Model):
     sexo = db.Column(db.String(10), nullable=False) 
     data_nascimento = db.Column(db.Date, nullable=False)
     
-    # Chave estrangeira para o usuário que criou o registro
+
     criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
-    # Relação de volta para o User
     criado_por = db.relationship('User', back_populates='bezerros_criados')
 
     def save(self):

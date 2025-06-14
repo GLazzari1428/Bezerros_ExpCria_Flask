@@ -1,8 +1,7 @@
-# app/main_routes.py
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort
 from flask_login import login_required, current_user
-from .models import SensorData, db # Vamos precisar de SensorData e db para o log
-from .mqtt_utils import get_current_status # Importa nossa nova função
+from .models import SensorData, db
+from .mqtt_utils import get_current_status
 from datetime import datetime
 from .models import ActuatorStatus, User, SystemSettings, Bezerro
 from .forms import RegistrationForm, EditUserForm, SettingsForm, BezerroForm
@@ -27,7 +26,6 @@ def home():
         temp_val = float(temp_atual_str)
         umid_val = float(umid_atual_str)
         
-        # Cria e salva o registro no banco
         new_log = SensorData(temperature=temp_val, humidity=umid_val, timestamp=datetime.now())
         db.session.add(new_log)
         db.session.commit()
@@ -146,19 +144,19 @@ def sensor_data(periodo):
 
         if periodo == '12h':
             start_time = end_time - timedelta(hours=12)
-            date_format_mysql = '%Y-%m-%d %H:%i' # Agrupa por minuto
+            date_format_mysql = '%Y-%m-%d %H:%i'
             label_format_python = '%H:%M'
         elif periodo == '24h':
             start_time = end_time - timedelta(days=1)
-            date_format_mysql = '%Y-%m-%d %H:00' # Agrupa por hora
+            date_format_mysql = '%Y-%m-%d %H:00' 
             label_format_python = '%d/%m %Hh'
         elif periodo == '7d':
             start_time = end_time - timedelta(days=7)
-            date_format_mysql = '%Y-%m-%d' # Agrupa por dia
+            date_format_mysql = '%Y-%m-%d'
             label_format_python = '%d/%m'
         elif periodo == '30d':
             start_time = end_time - timedelta(days=30)
-            date_format_mysql = '%Y-%m-%d' # Agrupa por dia
+            date_format_mysql = '%Y-%m-%d'
             label_format_python = '%d/%m'
         else:
             return jsonify({'error': 'Período inválido'}), 400
@@ -292,21 +290,19 @@ def live_status_api():
 @bp.route('/bezerros')
 @login_required
 def list_bezerros():
-    """Lista todos os bezerros cadastrados."""
     bezerros = Bezerro.get_all()
     return render_template('bezerros_list.html', bezerros=bezerros, title="Gerenciar Bezerros")
 
 @bp.route('/bezerro/add', methods=['GET', 'POST'])
 @login_required
 def add_bezerro():
-    """Adiciona um novo bezerro."""
     form = BezerroForm()
     if form.validate_on_submit():
         novo_bezerro = Bezerro(
             nome=form.nome.data,
             sexo=form.sexo.data,
             data_nascimento=form.data_nascimento.data,
-            criado_por_id=current_user.id  # Vincula ao usuário logado
+            criado_por_id=current_user.id
         )
         novo_bezerro.save()
         flash('Bezerro cadastrado com sucesso!', 'success')
@@ -320,11 +316,10 @@ def edit_bezerro(id):
     if not bezerro:
         abort(404)
     
-    # apenas o criador ou um admin pode editar.
     if bezerro.criado_por_id != current_user.id and current_user.role != 'admin':
-        abort(403) # Erro de "Proibido"
+        abort(403)
         
-    form = BezerroForm(obj=bezerro) # `obj=bezerro` pré-popula o formulário
+    form = BezerroForm(obj=bezerro) 
     
     if form.validate_on_submit():
         bezerro.nome = form.nome.data

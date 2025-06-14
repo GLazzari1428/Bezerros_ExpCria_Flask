@@ -3,7 +3,6 @@ import paho.mqtt.client as mqtt
 import time
 from flask import current_app
 
-# --- NOVA FUNÇÃO AUXILIAR ---
 def get_client():
 
     client = mqtt.Client()
@@ -44,7 +43,7 @@ def get_current_status():
             print(f"--- [DEBUG] MENSAGEM RECEBIDA: Tópico [{msg.topic}] -> Chave [{topic_key}] -> Valor [{decoded_payload}]")
 
     try:
-        client = get_client() # Usa a nova função auxiliar
+        client = get_client() 
         client.on_connect = on_connect
         client.on_message = on_message
         

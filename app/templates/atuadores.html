@@ -54,11 +54,9 @@
 
 {% block scripts %}
 <script>
-// Habilita os Tooltips do Bootstrap para a dica de "última alteração"
 const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
 const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
 
-// Função para enviar o comando para o backend
 function sendCommand(actuator, command) {
     console.log(`Enviando comando: Atuador=${actuator}, Comando=${command}`);
     
@@ -73,11 +71,9 @@ function sendCommand(actuator, command) {
     .then(data => {
         console.log('Resposta do servidor:', data);
         if (data.status === 'success') {
-            // CORREÇÃO: Adiciona um pequeno delay antes de recarregar a página.
-            // Isso dá tempo para o ESP32 e o broker MQTT atualizarem o status.
             setTimeout(() => {
                 window.location.reload();
-            }, 2000); // Espera 750ms
+            }, 2000); 
         } else {
             alert('Falha ao enviar comando: ' + data.message);
         }
@@ -89,7 +85,6 @@ function sendCommand(actuator, command) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Guarda o status inicial dos atuadores que foi renderizado na página.
     const initialStatus = {{ live_status | tojson }};
 
     const checkForUpdates = async () => {
@@ -97,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const response = await fetch('/api/live_status');
             const liveData = await response.json();
 
-            // Compara o status dos atuadores. Se algum mudou, recarrega.
+            // compara o status dos atuadores. Se algum mudou, recarrega.
             if ( liveData.heater !== initialStatus.heater ||
                  liveData.fan    !== initialStatus.fan    ||
                  liveData.mist   !== initialStatus.mist   ||

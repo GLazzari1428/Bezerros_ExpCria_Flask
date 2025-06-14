@@ -40,7 +40,6 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Guarda os valores iniciais que foram renderizados na página
         const initialTemp = '{{ temp_atual }}';
         const initialHum = '{{ umid_atual }}';
 
@@ -49,8 +48,6 @@
                 const response = await fetch('/api/live_status');
                 const liveData = await response.json();
 
-                // Compara os dados atuais da API com os dados iniciais da página
-                // Se algum valor de sensor relevante mudou, recarrega a página.
                 if (liveData.temperature && (liveData.temperature !== initialTemp || liveData.umidade !== initialHum)) {
                     console.log('Novos dados de sensores detectados. Recarregando...');
                     window.location.reload();
@@ -61,7 +58,6 @@
             }
         };
 
-        // Verifica por atualizações a cada 7 segundos
         setInterval(checkForUpdates, 7000);
     });
 </script>

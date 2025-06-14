@@ -3,50 +3,108 @@ import sys
 import os
 import random
 import math
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 
 # Adiciona o diretório raiz ao path para encontrar o módulo 'app'
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app import create_app
-from app.models import db, SensorData
+from app.models import db, SensorData, User, Bezerro # Importar User e Bezerro
 
 app = create_app()
 
 with app.app_context():
-    # Verifica se já existem dados para não popular duas vezes
-    if SensorData.query.count() > 50: # Se tiver mais de 50 registros, não faz nada
-        print("O banco de dados de sensores já parece estar populado. Saindo.")
+
+    # --- SEÇÃO DE CRIAÇÃO DE USUÁRIOS ---
+    print("Verificando e criando usuários administradores fictícios...")
+    
+    # Lista dos novos admins que queremos criar
+    admin_usernames = ['ana_silva', 'bruno_costa', 'carla_dias', 'diego_souza', 'elisa_pereira']
+    new_admins = []
+
+    # Primeiro, vamos garantir que o admin principal exista e obter seu objeto
+    main_admin = User.query.filter_by(username='admin').first()
+    if not main_admin:
+        print("Usuário 'admin' principal não encontrado. Por favor, execute 'utils/db.py' primeiro.")
         exit()
 
-    print("Populando o banco de dados com dados de sensores fictícios dos últimos 30 dias...")
+    for username in admin_usernames:
+        if User.query.filter_by(username=username).first() is None:
+            admin_user = User(
+                username=username,
+                full_name=f'{username.replace("_", " ").title()}',
+                email=f'{username}@example.com',
+                role='admin'
+            )
+            admin_user.set_password('12345') # Senha padrão para todos
+            db.session.add(admin_user)
+            new_admins.append(admin_user)
+            print(f"Usuário '{username}' criado.")
+        else:
+            # Se o usuário já existe, apenas o pega do banco para usar depois
+            new_admins.append(User.query.filter_by(username=username).first())
+            print(f"Usuário '{username}' já existe.")
     
-    end_time = datetime.now()
-    # Gera 30 dias de dados, um a cada 30 minutos
-    total_points = 30 * 24 * 2 
-    
-    new_data_points = []
-    for i in range(total_points):
-        # Calcula o timestamp para este ponto, indo para trás no tempo
-        current_time = end_time - timedelta(minutes=i * 30)
-        
-        # Gera uma temperatura com padrão senoidal (mais frio de madrugada, mais quente de tarde)
-        # e um pouco de ruído aleatório
-        temp_variation = math.sin(i / (24 * 2) * math.pi) * 10  # Variação de 10 graus
-        temperature = 18 + temp_variation + random.uniform(-1.5, 1.5)
-        
-        # Gera uma umidade aleatória
-        humidity = random.uniform(40.0, 85.0)
-
-        data_point = SensorData(
-            temperature=round(temperature, 2),
-            humidity=round(humidity, 2),
-            timestamp=current_time
-        )
-        new_data_points.append(data_point)
-
-    # Adiciona todos os pontos de uma vez (muito mais eficiente)
-    db.session.bulk_save_objects(new_data_points)
     db.session.commit()
+    print("Criação de usuários finalizada.")
+
+    # --- SEÇÃO DE CRIAÇÃO DE BEZERROS ---
+    print("\nPopulando o banco de dados com bezerros fictícios...")
+
+
+    bezerros_para_criar = []
+    # Garante que cada novo admin cadastre 4 bezerros
+    bezerro_num = 1
+    for admin in new_admins:
+        for i in range(4):
+            bezerro = Bezerro(
+                nome=f'Mimoso {bezerro_num}',
+                sexo=random.choice(['Macho', 'Fêmea']),
+                data_nascimento=date.today() - timedelta(days=random.randint(10, 365)),
+                criado_por_id=admin.id
+            )
+            bezerros_para_criar.append(bezerro)
+            bezerro_num += 1
     
-    print(f"Sucesso! {total_points} pontos de dados fictícios foram adicionados ao banco.")
+    # Cria os 10 bezerros restantes e os atribui ao admin principal
+    for i in range(10):
+        bezerro = Bezerro(
+            nome=f'Pintado {bezerro_num}',
+            sexo=random.choice(['Macho', 'Fêmea']),
+            data_nascimento=date.today() - timedelta(days=random.randint(10, 365)),
+            criado_por_id=main_admin.id
+        )
+        bezerros_para_criar.append(bezerro)
+        bezerro_num += 1
+
+    db.session.bulk_save_objects(bezerros_para_criar)
+    db.session.commit()
+    print(f"Sucesso! {len(bezerros_para_criar)} bezerros fictícios foram adicionados.")
+
+
+    print("\nPopulando o banco de dados com dados de sensores fictícios...")
+    if SensorData.query.count() > 50:
+        print("O banco de dados de sensores já parece estar populado. Saindo da seção de sensores.")
+    else:
+        end_time = datetime.now()
+        total_points = 30 * 24 * 2 # 30 dias, um a cada 30 minutos
+        
+        new_data_points = []
+        for i in range(total_points):
+            current_time = end_time - timedelta(minutes=i * 30)
+            temp_variation = math.sin(i / (24 * 2) * math.pi) * 10
+            temperature = 18 + temp_variation + random.uniform(-1.5, 1.5)
+            humidity = random.uniform(40.0, 85.0)
+
+            data_point = SensorData(
+                temperature=round(temperature, 2),
+                humidity=round(humidity, 2),
+                timestamp=current_time
+            )
+            new_data_points.append(data_point)
+
+        db.session.bulk_save_objects(new_data_points)
+        db.session.commit()
+        print(f"Sucesso! {total_points} pontos de dados de sensores fictícios foram adicionados.")
+
+print("\nProcesso de 'seeding' concluído.")

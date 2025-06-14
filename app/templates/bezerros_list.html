@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Gerenciar Bezerros</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('main.add_bezerro') }}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-circle"></i> Adicionar Novo Bezerro
+        </a>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-sm">
+        <thead>
+            <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Nome</th>
+                <th scope="col">Sexo</th>
+                <th scope="col">Data de Nascimento</th>
+                <th scope="col">Cadastrado por</th>
+                <th scope="col">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for bezerro in bezerros %}
+            <tr>
+                <td>{{ bezerro.id }}</td>
+                <td>{{ bezerro.nome }}</td>
+                <td>{{ bezerro.sexo }}</td>
+                <td>{{ bezerro.data_nascimento.strftime('%d/%m/%Y') }}</td>
+                <td>
+                    <span class="badge bg-info text-dark">{{ bezerro.criado_por.username }}</span>
+                </td>
+                <td>
+                    {% if current_user.id == bezerro.criado_por_id or current_user.role == 'admin' %}
+                    <a href="{{ url_for('main.edit_bezerro', id=bezerro.id) }}" class="btn btn-sm btn-outline-info">Editar</a>
+                    
+                    <form action="{{ url_for('main.delete_bezerro', id=bezerro.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja remover este bezerro?');">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Remover</button>
+                    </form>
+                    {% else %}
+                    <small class="text-muted">Sem permissão</small>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center">Nenhum bezerro cadastrado ainda.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

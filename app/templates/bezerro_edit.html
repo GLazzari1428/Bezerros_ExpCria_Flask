@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="h2">Editar Bezerro: {{ bezerro.nome }}</h1>
+<hr>
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <form method="POST" action="" novalidate>
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                {{ form.nome.label(class="form-label") }}
+                {{ form.nome(class="form-control") }}
+                {% for error in form.nome.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.sexo.label(class="form-label") }}
+                {{ form.sexo(class="form-control") }}
+                {% for error in form.sexo.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="mb-3">
+                {{ form.data_nascimento.label(class="form-label") }}
+                {{ form.data_nascimento(class="form-control") }}
+                <div class="form-text">Use o formato AAAA-MM-DD.</div>
+                {% for error in form.data_nascimento.errors %}<span class="text-danger">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="d-grid gap-2">
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('main.list_bezerros') }}" class="btn btn-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

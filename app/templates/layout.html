@@ -35,6 +35,9 @@
               <li class="nav-item">
                 <a class="nav-link" href="{{ url_for('main.atuadores') }}">Atuadores</a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{url_for('main.list_bezerros')}}">Bezerros</a>
+              </li>
               {% if current_user.role == 'admin' %}
               <li class="nav-item">
                 <a class="nav-link" href="{{url_for('main.list_users')}}">Usuários</a>

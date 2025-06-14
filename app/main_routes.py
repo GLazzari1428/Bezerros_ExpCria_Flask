@@ -4,8 +4,8 @@ from flask_login import login_required, current_user
 from .models import SensorData, db # Vamos precisar de SensorData e db para o log
 from .mqtt_utils import get_current_status # Importa nossa nova função
 from datetime import datetime
-from .models import ActuatorStatus, User, SystemSettings
-from .forms import RegistrationForm, EditUserForm, SettingsForm
+from .models import ActuatorStatus, User, SystemSettings, Bezerro
+from .forms import RegistrationForm, EditUserForm, SettingsForm, BezerroForm
 from flask import request, jsonify
 from .mqtt_utils import publish_command
 from datetime import datetime, timedelta
@@ -18,15 +18,11 @@ bp = Blueprint('main', __name__)
 @bp.route('/home')
 @login_required
 def home():
-    # Chama nossa função para buscar os dados mais recentes do MQTT
     status = get_current_status()
     
-    # Processa os dados recebidos (com valores padrão caso algo falhe)
     temp_atual_str = status.get('temperature', 'N/A')
     umid_atual_str = status.get('umidade', 'N/A')
 
-    # --- Lógica de log de dados ---
-    # Se temos dados válidos, salvamos no banco para o histórico
     try:
         temp_val = float(temp_atual_str)
         umid_val = float(umid_atual_str)
@@ -38,7 +34,6 @@ def home():
     except (ValueError, TypeError):
         print("Não foi possível salvar o log: dados de sensor inválidos ou ausentes.")
 
-    # Lógica para definir a cor e o status na interface
     status_geral = "Indisponível"
     status_cor = "secondary"
     try:
@@ -59,7 +54,7 @@ def home():
             status_geral = "Normal"
             status_cor = "success"
     except (ValueError, TypeError):
-        pass # Mantém o status como "Indisponível"
+        pass 
             
     return render_template('home.html', 
                            title='Home', 
@@ -71,14 +66,13 @@ def home():
 @bp.route('/atuadores')
 @login_required
 def atuadores():
-    # 1. Busca o status atual em tempo real do broker MQTT
+
     live_status = get_current_status()
 
-    # 2. Busca o histórico (última ativação) do nosso banco de dados
+
     actuators_from_db = ActuatorStatus.query.all()
     history_status = {act.actuator_name: act.last_changed.strftime('%d/%m/%Y às %H:%M:%S') for act in actuators_from_db}
 
-    # 3. Mapeia os nomes para a exibição na interface
     actuator_display_names = {
         'heater': 'Aquecedor',
         'fan': 'Ventilador',
@@ -102,7 +96,6 @@ def atuador_command():
     actuator = data.get('actuator')
     command = data.get('command')
 
-    # Mapa de chaves da interface para tópicos de comando MQTT
     command_topic_map = {
         'heater': 'bezerros/heater/command',
         'fan': 'bezerros/fan/command',
@@ -125,10 +118,6 @@ def atuador_command():
 @bp.route('/sensores')
 @login_required
 def sensores():
-    """
-    CORREÇÃO: Agora, esta rota busca os dados atuais e os passa para o template,
-    garantindo que os valores na página estejam sempre sincronizados no carregamento.
-    """
     status = get_current_status()
     temp_atual = status.get('temperature', 'N/A')
     umid_atual = status.get('umidade', 'N/A')
@@ -143,7 +132,6 @@ def sensor_data(periodo):
     end_time = datetime.now()
     query_result = []
     
-    # A lógica para o período de 1h não usa a função de data, então não precisa de alteração
     if periodo == '1h':
         start_time = end_time - timedelta(hours=1)
         query_result = SensorData.query.filter(SensorData.timestamp.between(start_time, end_time)).order_by(SensorData.timestamp.asc()).all()
@@ -152,9 +140,9 @@ def sensor_data(periodo):
         humidities = [d.humidity for d in query_result]
 
     else:
-        # Lógica de agregação para períodos mais longos
-        date_format_mysql = "" # Usaremos formatos do MySQL/MariaDB
-        label_format_python = "" # Usaremos formatos do Python para exibir
+
+        date_format_mysql = "" 
+        label_format_python = "" 
 
         if periodo == '12h':
             start_time = end_time - timedelta(hours=12)
@@ -175,7 +163,6 @@ def sensor_data(periodo):
         else:
             return jsonify({'error': 'Período inválido'}), 400
 
-        # Query de agregação CORRIGIDA usando func.date_format
         query_result = db.session.query(
             func.date_format(SensorData.timestamp, date_format_mysql).label('period'),
             func.avg(SensorData.temperature).label('avg_temp'),
@@ -188,11 +175,10 @@ def sensor_data(periodo):
             'period'
         ).all()
         
-        # O label agora é formatado no Python a partir do resultado do banco
         labels = [d.period for d in query_result]
-        if 'h' in label_format_python or ':' in label_format_python: # Se o formato incluir hora/minuto
+        if 'h' in label_format_python or ':' in label_format_python:
             labels = [datetime.strptime(d.period, '%Y-%m-%d %H:%M' if ':' in date_format_mysql else '%Y-%m-%d %H:00').strftime(label_format_python) for d in query_result]
-        else: # Se o formato for apenas dia
+        else:
             labels = [datetime.strptime(d.period, '%Y-%m-%d').strftime(label_format_python) for d in query_result]
 
         temperatures = [round(d.avg_temp, 2) for d in query_result]
@@ -210,14 +196,12 @@ def sensor_data(periodo):
 @bp.route('/users')
 @login_required
 def list_users():
-    """Lista todos os usuários do sistema."""
     users = User.get_all()
     return render_template('users_list.html', users=users, title="Gerenciar Usuários")
 
 @bp.route('/user/add', methods=['GET', 'POST'])
 @login_required
 def add_user():
-    """Adiciona um novo usuário (função do admin)."""
     form = RegistrationForm()
     if form.validate_on_submit():
         user = User(
@@ -235,7 +219,6 @@ def add_user():
 @bp.route('/user/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_user(id):
-    """Edita um usuário existente."""
     user = User.get_by_id(id)
     if not user:
         abort(404)
@@ -264,7 +247,6 @@ def edit_user(id):
 @bp.route('/user/delete/<int:id>', methods=['POST'])
 @login_required
 def delete_user(id):
-    """Deleta um usuário."""
     user_to_delete = User.get_by_id(id)
     if not user_to_delete:
         flash('Usuário não encontrado.', 'error')
@@ -301,10 +283,72 @@ def gerenciamento():
 
     return render_template('gerenciamento.html', title="Gerenciamento", form=form)
 
-# --- NOVA ROTA SIMPLIFICADA PARA POLLING ---
 @bp.route('/api/live_status')
 @login_required
 def live_status_api():
-    """Retorna o status mais recente de todos os sensores e atuadores."""
     status = get_current_status()
     return jsonify(status)
+
+@bp.route('/bezerros')
+@login_required
+def list_bezerros():
+    """Lista todos os bezerros cadastrados."""
+    bezerros = Bezerro.get_all()
+    return render_template('bezerros_list.html', bezerros=bezerros, title="Gerenciar Bezerros")
+
+@bp.route('/bezerro/add', methods=['GET', 'POST'])
+@login_required
+def add_bezerro():
+    """Adiciona um novo bezerro."""
+    form = BezerroForm()
+    if form.validate_on_submit():
+        novo_bezerro = Bezerro(
+            nome=form.nome.data,
+            sexo=form.sexo.data,
+            data_nascimento=form.data_nascimento.data,
+            criado_por_id=current_user.id  # Vincula ao usuário logado
+        )
+        novo_bezerro.save()
+        flash('Bezerro cadastrado com sucesso!', 'success')
+        return redirect(url_for('main.list_bezerros'))
+    return render_template('bezerro_add.html', form=form, title="Adicionar Bezerro")
+
+@bp.route('/bezerro/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_bezerro(id):
+    bezerro = Bezerro.get_by_id(id)
+    if not bezerro:
+        abort(404)
+    
+    # apenas o criador ou um admin pode editar.
+    if bezerro.criado_por_id != current_user.id and current_user.role != 'admin':
+        abort(403) # Erro de "Proibido"
+        
+    form = BezerroForm(obj=bezerro) # `obj=bezerro` pré-popula o formulário
+    
+    if form.validate_on_submit():
+        bezerro.nome = form.nome.data
+        bezerro.sexo = form.sexo.data
+        bezerro.data_nascimento = form.data_nascimento.data
+        db.session.commit() 
+        flash('Dados do bezerro atualizados com sucesso!', 'success')
+        return redirect(url_for('main.list_bezerros'))
+
+    return render_template('bezerro_edit.html', form=form, bezerro=bezerro, title="Editar Bezerro")
+
+@bp.route('/bezerro/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_bezerro(id):
+    bezerro = Bezerro.get_by_id(id)
+    if not bezerro:
+        flash('Bezerro não encontrado.', 'error')
+        return redirect(url_for('main.list_bezerros'))
+
+    # apenas o criador ou um admin pode deletar.
+    if bezerro.criado_por_id != current_user.id and current_user.role != 'admin':
+        flash('Você não tem permissão para remover este registro.', 'danger')
+        return redirect(url_for('main.list_bezerros'))
+    
+    bezerro.delete()
+    flash('Bezerro removido com sucesso.', 'success')
+    return redirect(url_for('main.list_bezerros'))

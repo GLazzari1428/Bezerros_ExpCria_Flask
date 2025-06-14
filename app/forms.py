@@ -1,6 +1,6 @@
 # app/forms.py
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, FloatField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, SelectField, FloatField, DateField
 from wtforms.validators import DataRequired, EqualTo, ValidationError, Optional
 from .models import User
 
@@ -48,21 +48,18 @@ class EditUserForm(FlaskForm):
 
     def validate_username(self, username):
         if username.data != self.original_username:
-            # --- LINHA CORRIGIDA ABAIXO ---
             user = User.query.filter_by(username=username.data).first()
             if user:
                 raise ValidationError('Este nome de usuário já está em uso.')
 
     def validate_email(self, email):
         if email.data != self.original_email:
-            # --- LINHA CORRIGIDA ABAIXO ---
             user = User.query.filter_by(email=email.data).first()
             if user:
                 raise ValidationError('Este email já está em uso.')
 
 
 class SettingsForm(FlaskForm):
-    """Formulário para editar as configurações do sistema."""
     temp_frio = FloatField('Temperatura Mínima Ideal (°C)', validators=[DataRequired()], 
                            description="Abaixo deste valor, o ambiente é considerado 'Frio'.")
     temp_quente = FloatField('Temperatura Máxima Ideal (°C)', validators=[DataRequired()],
@@ -72,3 +69,9 @@ class SettingsForm(FlaskForm):
     umidade_alta = FloatField('Umidade Máxima Ideal (%)', validators=[DataRequired()],
                               description="Acima deste valor, o ambiente é considerado 'Úmido'.")
     submit = SubmitField('Salvar Configurações')
+
+class BezerroForm(FlaskForm):
+    nome = StringField('Nome do Bezerro', validators=[DataRequired()])
+    sexo = SelectField('Sexo', choices=[('Macho', 'Macho'), ('Fêmea', 'Fêmea')], validators=[DataRequired()])
+    data_nascimento = DateField('Data de Nascimento', format='%Y-%m-%d', validators=[DataRequired()])
+    submit = SubmitField('Salvar')

@@ -1,24 +1,22 @@
-# app/models.py
-
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-# A importação agora vai funcionar porque o 'db' em __init__.py é criado antes.
 from . import db, login_manager
+from datetime import date 
 
-# O Flask-Login precisa desta função para saber como encontrar um usuário pelo ID.
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Adicionamos 'UserMixin' para integrar o modelo User com o Flask-Login
 class User(UserMixin, db.Model):
-    # O 'id' já é a chave primária, o Flask-Login vai usá-lo.
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     full_name = db.Column(db.String(120))
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(256))
     role = db.Column(db.String(20), default='publico_geral') # 'admin' ou 'publico_geral'
+
+    bezerros_criados = db.relationship('Bezerro', back_populates='criado_por', lazy='dynamic', cascade="all, delete-orphan") # relacionamento com os bezerros
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -41,6 +39,34 @@ class User(UserMixin, db.Model):
     @staticmethod
     def get_by_id(id):
         return User.query.get(id)
+
+class Bezerro(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False)
+    sexo = db.Column(db.String(10), nullable=False) 
+    data_nascimento = db.Column(db.Date, nullable=False)
+    
+    # Chave estrangeira para o usuário que criou o registro
+    criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # Relação de volta para o User
+    criado_por = db.relationship('User', back_populates='bezerros_criados')
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    @staticmethod
+    def get_all():
+        return Bezerro.query.order_by(Bezerro.nome).all()
+
+    @staticmethod
+    def get_by_id(id):
+        return Bezerro.query.get(id)
 
 
 class SensorData(db.Model):

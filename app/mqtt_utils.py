@@ -5,18 +5,9 @@ from flask import current_app
 
 # --- NOVA FUNÇÃO AUXILIAR ---
 def get_client():
-    """
-    Cria, configura e retorna uma instância do cliente MQTT.
-    Esta função centraliza a lógica de criação do cliente.
-    """
-    try:
-        # Tenta usar a API de Callback v1, se disponível (paho-mqtt >= 2.0)
-        client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1)
-    except AttributeError:
-        # Fallback para versões mais antigas
-        client = mqtt.Client()
 
-    # Define o usuário e senha apenas se eles forem fornecidos no config.py
+    client = mqtt.Client()
+
     if current_app.config.get('MQTT_USERNAME'):
         client.username_pw_set(
             current_app.config['MQTT_USERNAME'],
@@ -24,16 +15,11 @@ def get_client():
         )
     return client
 
-# --- FUNÇÕES EXISTENTES, AGORA USANDO get_client() ---
 
 def get_current_status():
-    """
-    Conecta-se ao broker, coleta as mensagens retidas e retorna um dicionário com o estado atual.
-    """
     print("\n--- [DEBUG] Iniciando get_current_status ---")
     status_data = {}
     
-    # Lista de tópicos para se inscrever
     topics_to_fetch = {
         "bezerros/temperature": "temperature",
         "bezerros/umidade/status": "umidade",
@@ -85,9 +71,8 @@ def get_current_status():
 
 
 def publish_command(topic, payload, retain=False):
-    """Conecta, publica um único comando e desconecta."""
     try:
-        client = get_client() # Usa a nova função auxiliar
+        client = get_client()
         client.connect(
             current_app.config['MQTT_BROKER_URL'],
             current_app.config['MQTT_BROKER_PORT'],
@@ -107,11 +92,8 @@ def publish_command(topic, payload, retain=False):
 
 
 def publish_settings(settings):
-    """
-    Publica todas as configurações do sistema para o broker MQTT com retenção.
-    """
     try:
-        client = get_client() # Usa a nova função auxiliar
+        client = get_client()
         client.connect(
             current_app.config['MQTT_BROKER_URL'],
             current_app.config['MQTT_BROKER_PORT'],
@@ -119,7 +101,6 @@ def publish_settings(settings):
         )
         client.loop_start()
         
-        # Publica cada configuração com a flag de retenção (retain=True)
         client.publish('sistema/config/temp_frio', str(settings.temp_frio), retain=True)
         client.publish('sistema/config/temp_quente', str(settings.temp_quente), retain=True)
         client.publish('sistema/config/umidade_baixa', str(settings.umidade_baixa), retain=True)

@@ -328,12 +328,6 @@ def add_bezerro():
 @login_required
 def edit_bezerro(id):
     bezerro = Bezerro.get_by_id(id)
-    if not bezerro:
-        abort(404)
-    
-    if bezerro.criado_por_id != current_user.id and current_user.role != 'admin':
-        abort(403)
-        
     form = BezerroForm(obj=bezerro) 
     
     if form.validate_on_submit():
@@ -352,11 +346,6 @@ def delete_bezerro(id):
     bezerro = Bezerro.get_by_id(id)
     if not bezerro:
         flash('Bezerro não encontrado.', 'error')
-        return redirect(url_for('main.list_bezerros'))
-
-    # apenas o criador ou um admin pode deletar.
-    if bezerro.criado_por_id != current_user.id and current_user.role != 'admin':
-        flash('Você não tem permissão para remover este registro.', 'danger')
         return redirect(url_for('main.list_bezerros'))
     
     bezerro.delete()

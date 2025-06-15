@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="px-4 py-5 my-5 text-center">
+<div class="px-4 py-3 text-center">
     <h1 class="display-5 fw-bold">Bem-vindo, {{ current_user.full_name or current_user.username }}!</h1>
     <div class="col-lg-6 mx-auto">
         <p class="lead mb-4">Você está no sistema de controle térmico para bezerros.</p>
@@ -9,7 +9,7 @@
 </div>
 
 {% if current_user.role == 'admin' %}
-<div class="row justify-content-center">
+<div class="px-4 py-4 row justify-content-center">
     <div class="col-md-8">
         <div class="card text-center mb-4">
             <div class="card-header">
@@ -29,12 +29,24 @@
 </div>
 {% endif %}
 
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <h3>Sobre o Projeto</h3>
-        <p>DESCRICAO DO SISTEMA **ESCREVER**</p>
-    </div>
-</div>
+<h3>Sobre o Projeto: Conforto Térmico Inteligente para Bezerros</h3>
+<p>
+    Este sistema foi desenvolvido como uma solução de zootecnia de precisão para a <strong>Fazenda Gralha Azul</strong>, localizada no campus da PUCPR em Curitiba. O projeto visa garantir o bem-estar e a saúde de bezerros em seus estágios iniciais de vida, enfrentando os desafios do clima subtropical da região, que inclui desde verões úmidos a invernos com risco de geadas.
+</p>
+<p>
+    Utilizando um <strong>ESP32</strong> como controlador principal, o sistema coleta dados em tempo real de sensores de temperatura e umidade e comanda atuadores essenciais para o controle do ambiente. As informações são transmitidas via <strong>MQTT</strong> para esta aplicação web, desenvolvida com <strong>Flask</strong>, que permite o monitoramento e controle total do sistema.
+</p>
+<h4>Principais Funcionalidades:</h4>
+<ul>
+    <li><strong>Monitoramento em Tempo Real:</strong> Acompanhe a temperatura e a umidade do ambiente através de gráficos interativos e indicadores visuais.</li>
+    <li><strong>Controle de Atuadores:</strong> Administradores podem acionar manualmente o aquecedor, ventilador, sistema de névoa e persianas para intervir rapidamente nas condições do local.</li>
+    <li><strong>Automação Inteligente:</strong> O sistema ajusta automaticamente o ambiente com base em parâmetros pré-definidos, ligando o aquecimento em dias frios ou o resfriamento em dias quentes.</li>
+    <li><strong>Gestão de Dados:</strong> Todos os dados dos sensores e acionamentos dos atuadores são armazenados em um banco de dados <strong>MariaDB</strong>, permitindo a geração de históricos detalhados para análise e pesquisa.</li>
+    <li><strong>Gerenciamento Completo:</strong> A plataforma inclui um sistema de gerenciamento de usuários com diferentes níveis de permissão (CRUD) e também um cadastro para os bezerros.</li>
+</ul>
+<p>
+    Este projeto não apenas melhora diretamente o bem-estar animal, projetando uma redução significativa no estresse térmico, mas também serve como uma poderosa ferramenta acadêmica, transformando a fazenda em um laboratório vivo para o avanço da inovação agropecuária sustentável.
+</p>
 {% endblock %}
 
 {% block scripts %}

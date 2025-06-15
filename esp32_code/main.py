@@ -1,13 +1,16 @@
 import _thread
 import time
 import machine
+from machine import Pin
 import network
 import dht
 import esp32
 from umqtt.simple import MQTTClient
 
-WIFI_SSID = "OLJR"
-WIFI_PASS = "ajb2727ahr41941428"
+#WIFI_SSID = "OLJR"
+#WIFI_PASS = "ajb2727ahr41941428"
+WIFI_SSID = "miniac"
+WIFI_PASS = "thor1428"
 MQTT_BROKER = "oljrhome.tplinkdns.com"
 MQTT_USER = "batavo"
 MQTT_PASSWORD = "thor1428"
@@ -37,7 +40,7 @@ TOPICO_PUB_UMIDADE = b"bezerros/umidade/status"
 aquecedor = machine.Pin(RELE_1, machine.Pin.OUT, value=0)
 ventilador = machine.Pin(RELE_2, machine.Pin.OUT, value=1) 
 nevoa = machine.Pin(RELE_3, machine.Pin.OUT, value=1)
-sensor = dht.DHT11(machine.Pin(DHT_PIN))
+sensor = dht.DHT11(Pin(4, Pin.IN, Pin.PULL_UP)) #Pin.PULL_UP faz o DHT11 funcionar (resistor pullup interno)
 servo = machine.PWM(machine.Pin(SERVO), freq=50)
 servo.duty(SERVO_FECHADO)
 
@@ -134,11 +137,11 @@ def thread_controle():
         print("--------------------")
         
         try:
-            #sensor.measure()
-            #temp_atual = sensor.temperature()
-            #umid_atual = sensor.humidity()
-            temp_atual = 20 
-            umid_atual = 50
+            sensor.measure()
+            temp_atual = sensor.temperature()
+            umid_atual = sensor.humidity()
+            #temp_atual = 20 
+            #umid_atual = 50
             print(f"Leitura: Temp={temp_atual}°C, Umid={umid_atual}%")
         except Exception as e:
             print(f"Falha ao ler o sensor: {e}. Pulando este ciclo.")

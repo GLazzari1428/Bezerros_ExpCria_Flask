@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Histórico Completo dos Sensores</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('main.sensores') }}" class="btn btn-sm btn-outline-secondary">
+            Voltar para os Gráficos
+        </a>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-sm">
+        <thead>
+            <tr>
+                <th scope="col">Timestamp</th>
+                <th scope="col">Temperatura</th>
+                <th scope="col">Umidade</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dado in dados %}
+            <tr>
+                <td>{{ dado.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                <td>{{ "%.2f"|format(dado.temperature) }} °C</td>
+                <td>{{ "%.2f"|format(dado.humidity) }} %</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" class="text-center">Nenhum dado histórico encontrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

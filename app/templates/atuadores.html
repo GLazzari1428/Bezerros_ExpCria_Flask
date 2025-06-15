@@ -3,8 +3,15 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">Controle de Atuadores</h1>
-</div>
-
+    {% if current_user.role == 'admin' %}
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('main.historico_atuadores') }}" class="btn btn-sm btn-outline-info">
+            <i class="bi bi-list-ul"></i> Ver Histórico Completo
+        </a>
+    </div>
+    {% endif %}
+    </div>
+    
 <div class="row">
     {% for key, name in actuator_names.items() %}
     {% set status = live_status.get(key, 'N/A') %}

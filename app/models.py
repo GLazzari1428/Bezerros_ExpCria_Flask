@@ -15,8 +15,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), index=True, unique=True)
     password_hash = db.Column(db.String(256))
     role = db.Column(db.String(20), default='publico_geral')
-    
-    bezerros_criados = db.relationship('Bezerro', back_populates='criado_por', lazy='dynamic', cascade="all, delete-orphan") # relacionamento com os bezerros
+    bezerros_criados = db.relationship('Bezerro', back_populates='criado_por', lazy='dynamic', cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -46,7 +45,6 @@ class Bezerro(db.Model):
     sexo = db.Column(db.String(10), nullable=False) 
     data_nascimento = db.Column(db.Date, nullable=False)
     
-
     criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     criado_por = db.relationship('User', back_populates='bezerros_criados')
@@ -80,6 +78,11 @@ class ActuatorStatus(db.Model):
     status = db.Column(db.String(20))
     last_changed = db.Column(db.DateTime, default=db.func.now())
 
+class ActuatorHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    actuator_name = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(20), nullable=False)
+    timestamp = db.Column(db.DateTime, default=db.func.now())
 class SystemSettings(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     temp_frio = db.Column(db.Float, default=15.0)
@@ -95,3 +98,4 @@ class SystemSettings(db.Model):
             db.session.add(settings)
             db.session.commit()
         return settings
+    

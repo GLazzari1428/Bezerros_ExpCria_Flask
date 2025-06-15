@@ -11,6 +11,14 @@
             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="updateCharts('7d')">7d</button>
             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="updateCharts('30d')">30d</button>
         </div>
+        
+        {% if current_user.role == 'admin' %}
+        <div class="btn-group me-2">
+            <a href="{{ url_for('main.sensores_history') }}" class="btn btn-sm btn-outline-info">
+                <i class="bi bi-list-ul"></i> Ver Histórico Completo
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 

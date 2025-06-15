@@ -4,10 +4,15 @@ import os
 import random
 import math
 from datetime import datetime, timedelta, date
-from app import create_app
-from app.models import db, SensorData, User, Bezerro
 
+# --- CORREÇÃO AQUI ---
+# Adiciona o diretório raiz do projeto ao caminho do Python
+# Isso deve vir ANTES de importar qualquer módulo do seu app
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# Agora as importações do projeto funcionarão
+from app import create_app
+from app.models import db, SensorData, User, Bezerro, ActuatorHistory
 
 
 app = create_app()
@@ -98,5 +103,39 @@ with app.app_context():
         db.session.bulk_save_objects(new_data_points)
         db.session.commit()
         print(f"Sucesso! {total_points} pontos de dados de sensores fictícios foram adicionados.")
+
+    print("\nPopulando o banco de dados com histórico de atuadores fictício...")
+    if ActuatorHistory.query.count() > 0:
+        print("O banco de dados de histórico de atuadores já parece estar populado. Pulando esta etapa.")
+    else:
+        new_history_logs = []
+        actuator_names = ['Aquecedor', 'Ventilador', 'Sistema de Névoa', 'Persiana']
+        end_time = datetime.now()
+
+        # Gera eventos aleatórios para as últimas 72 horas
+        for i in range(72):
+            # Chance de 60% de ocorrer um evento a cada hora
+            if random.random() < 0.6:
+                current_time = end_time - timedelta(hours=i, minutes=random.randint(0, 59))
+                actuator = random.choice(actuator_names)
+
+                if actuator == 'Persiana':
+                    status = random.choice(['aberto', 'fechado'])
+                else:
+                    status = random.choice(['ligado', 'desligado'])
+                
+                log_entry = ActuatorHistory(
+                    actuator_name=actuator,
+                    status=status,
+                    timestamp=current_time
+                )
+                new_history_logs.append(log_entry)
+
+        if new_history_logs:
+            db.session.bulk_save_objects(new_history_logs)
+            db.session.commit()
+        
+        print(f"Sucesso! {len(new_history_logs)} registros de histórico de atuadores foram adicionados.")
+
 
 print("\nProcesso de 'seeding' concluído.")

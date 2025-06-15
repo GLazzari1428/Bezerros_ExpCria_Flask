@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from .models import SensorData, db
 from .mqtt_utils import get_current_status
 from datetime import datetime
-from .models import ActuatorStatus, User, SystemSettings, Bezerro
+from .models import ActuatorStatus, User, SystemSettings, Bezerro, ActuatorHistory
 from .forms import RegistrationForm, EditUserForm, SettingsForm, BezerroForm
 from flask import request, jsonify
 from .mqtt_utils import publish_command
@@ -109,6 +109,21 @@ def atuador_command():
     success = publish_command(topic, command)
 
     if success:
+        try:
+            status_text = "aberto" if command == '1' and actuator == 'pers' else \
+                          "fechado" if command == '0' and actuator == 'pers' else \
+                          "ligado" if command == '1' else "desligado"
+            
+            history_log = ActuatorHistory(
+                actuator_name=actuator_display_names.get(actuator, actuator),
+                status=status_text,
+                timestamp=datetime.now()
+            )
+            db.session.add(history_log)
+            db.session.commit()
+        except Exception as e:
+            print(f"Erro ao salvar histórico do atuador: {e}")
+            # Não impede a resposta de sucesso, apenas loga o erro no servidor
         return jsonify({'status': 'success', 'message': f'Comando {command} enviado para {actuator}.'})
     else:
         return jsonify({'status': 'error', 'message': 'Falha ao publicar no broker MQTT.'}), 500
@@ -347,3 +362,29 @@ def delete_bezerro(id):
     bezerro.delete()
     flash('Bezerro removido com sucesso.', 'success')
     return redirect(url_for('main.list_bezerros'))
+
+@bp.route('/sensores/historico')
+@login_required
+def sensores_history():
+    if current_user.role != 'admin':
+        abort(403) 
+
+    dados_completos = SensorData.query.order_by(SensorData.timestamp.desc()).all()
+    
+    return render_template('sensores_history.html', 
+                           title="Histórico Completo", 
+                           dados=dados_completos)
+
+@bp.route('/atuadores/historico')
+@login_required
+def historico_atuadores():
+    # Garante que apenas administradores possam acessar
+    if current_user.role != 'admin':
+        abort(403)
+
+    # Busca todos os registros, ordenados do mais recente para o mais antigo
+    historico = ActuatorHistory.query.order_by(ActuatorHistory.timestamp.desc()).all()
+    
+    return render_template('atuadores_history.html', 
+                           title="Histórico de Atuadores", 
+                           historico=historico)

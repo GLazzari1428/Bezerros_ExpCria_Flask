@@ -13,10 +13,17 @@ from . import mqtt_utils
 
 bp = Blueprint('main', __name__)
 
+# app/main_routes.py
+
 @bp.route('/')
 @bp.route('/home')
 @login_required
 def home():
+    settings = SystemSettings.get_settings()
+
+    muito_quente_threshold = settings.temp_quente + 5.0
+    muito_frio_threshold = settings.temp_frio - 5.0
+
     status = get_current_status()
     
     temp_atual_str = status.get('temperature', 'N/A')
@@ -34,20 +41,21 @@ def home():
 
     status_geral = "Indisponível"
     status_cor = "secondary"
+    
     try:
         temp = float(temp_atual_str)
-        if temp >= 30.0:
+        if temp >= muito_quente_threshold:
             status_geral = "Muito Quente"
             status_cor = "danger"
-        elif temp >= 25.0:
+        elif temp >= settings.temp_quente:
             status_geral = "Quente"
             status_cor = "warning"
-        elif temp < 15.0:
-            status_geral = "Frio"
-            status_cor = "info"
-        elif temp < 10.0:
+        elif temp < muito_frio_threshold:
             status_geral = "Muito Frio"
             status_cor = "primary"
+        elif temp < settings.temp_frio:
+            status_geral = "Frio"
+            status_cor = "info"
         else:
             status_geral = "Normal"
             status_cor = "success"
